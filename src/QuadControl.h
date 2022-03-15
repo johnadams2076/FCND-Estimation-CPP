@@ -48,4 +48,8 @@ public:
 
   // integral control
   float integratedAltitudeError;
+
+  //custom designer params
+  float altThrust;
+  const float CONST_GRAVITY = 9.81; // gravity in [m/s^2]
 };
