@@ -97,4 +97,5 @@ public:
 	}
 
 	float CovConditionNumber() const;
+	const float GRAVITY = 9.81f;
 };
