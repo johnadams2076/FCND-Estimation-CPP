@@ -98,7 +98,7 @@ void QuadEstimatorEKF::UpdateFromIMU(V3F accel, V3F gyro)
 	//ekfState(6) = ekfState(6) + dtIMU * gyro.z;	// yaw
 
 	// Estimation for Quadrotors paper. Section 7.1.2 
-	// Nonlinear Complementary Filter quaternion implemnetation.  
+	// Nonlinear Complementary Filter quaternion implementation.  
 	Quaternion<float> predictedQuaternion = Quaternion<float>::FromEuler123_RPY(rollEst, pitchEst, ekfState(6));
 	predictedQuaternion.IntegrateBodyRate(gyro, dtIMU);
 	float predictedPitch = predictedQuaternion.Pitch();

@@ -93,7 +93,22 @@ For the controls project, the simulator was working with a perfect set of sensor
 
 NOTE: Your answer should match the settings in `SimulatedSensors.txt`, where you can also grab the simulated noise parameters for all the other sensors.
 
+Solution Code:
+`import numpy as np
+filename = "Graph1.txt"
+data = np.loadtxt(filename, delimiter=',', dtype='float64', skiprows=1)
+print(data[:, 1])
+std_dev = np.std(data[:, 1])
+print("Standard Deviation for GPS is", std_dev)
+filename = "Graph2.txt"
+data = np.loadtxt(filename, delimiter=',', dtype='float64', skiprows=1)
+print(data[:, 1])
+std_dev = np.std(data[:, 1])
+print("Standard Deviation for accelerometer is", std_dev)`
 
+Standard deviation for GPS values was 0.7023187281387686
+Standard deviation for Accelerometer values was 0.4952269064271874
+![Scenario 06 Results](Scenario_06.JPG)
 ### Step 2: Attitude Estimation ###
 
 Now let's look at the first step to our state estimation: including information from our IMU.  In this step, you will be improving the complementary filter-type attitude filter with a better rate gyro attitude integration scheme.
@@ -112,8 +127,16 @@ In the screenshot above the attitude estimation using linear scheme (left) and u
 ***Success criteria:*** *Your attitude estimator needs to get within 0.1 rad for each of the Euler angles for at least 3 seconds.*
 
 **Hint: see section 7.1.2 of [Estimation for Quadrotors](https://www.overleaf.com/read/vymfngphcccj) for a refresher on a good non-linear complimentary filter for attitude using quaternions.**
+Implementation can be found in method 
+`void QuadEstimatorEKF::UpdateFromIMU(V3F accel, V3F gyro)`
+A non-linear complimentary filter was used. Instead of going with the Rotation matrix approach, Quarternions were used.
+`Quaternion<float> predictedQuaternion = Quaternion<float>::FromEuler123_RPY(rollEst, pitchEst, ekfState(6));
+	predictedQuaternion.IntegrateBodyRate(gyro, dtIMU);
+	float predictedPitch = predictedQuaternion.Pitch();
+	float predictedRoll = predictedQuaternion.Roll();
+	float predictedYaw = predictedQuaternion.Yaw();`
 
-
+![Scenario 7](Scenario_07.JPG)
 ### Step 3: Prediction Step ###
 
 In this next step you will be implementing the prediction step of your filter.
@@ -156,7 +179,23 @@ Another set of bad examples is shown below for having a `QVelXYStd` too large (f
 
 ***Success criteria:*** *This step doesn't have any specific measurable criteria being checked.*
 
+Implementation can be found in method `VectorXf QuadEstimatorEKF::PredictState(VectorXf curState, float dt, V3F accel, V3F gyro)`.
+To convert acceleration from body frame to inertial frame, we use `V3F intertialFrameAccel = attitude.Rotate_BtoI(accel);`.
+predictedState's first 3 values are velocities, next 3 are acceleration.
 
+![Scenario 08](Scenario_08.JPG)
+
+In order to successfully run Scenario 09, Prediction Covariance, we modify method,
+`MatrixXf QuadEstimatorEKF::GetRbgPrime(float roll, float pitch, float yaw)`,
+and `void QuadEstimatorEKF::Predict(float dt, V3F accel, V3F gyro)`
+We return the partial derivative of the Rbg rotation matrix with respect to yaw.
+Inputs are Euler angles.
+Predict the covariance in time dt going forward. We feed the Jacobian with necessary values.
+`gPrime(3, 6) = (RbgPrime(0) * accel).sum() * dt;
+	gPrime(4, 6) = (RbgPrime(1) * accel).sum() * dt;
+	gPrime(5, 6) = (RbgPrime(2) * accel).sum() * dt;`
+and ones along the diagonal. 
+![Scenario 09](Scenario_09.JPG)
 ### Step 4: Magnetometer Update ###
 
 Up until now we've only used the accelerometer and gyro for our state estimation.  In this step, you will be adding the information from the magnetometer to improve your filter's performance in estimating the vehicle's heading.
@@ -176,8 +215,23 @@ Up until now we've only used the accelerometer and gyro for our state estimation
 **Hint: after implementing the magnetometer update, you may have to once again tune the parameter `QYawStd` to better balance between the long term drift and short-time noise from the magnetometer.**
 
 **Hint: see section 7.3.2 of [Estimation for Quadrotors](https://www.overleaf.com/read/vymfngphcccj) for a refresher on the magnetometer update.**
+`void QuadEstimatorEKF::UpdateFromMag(float magYaw)`
+is the method. `float currentEstimatedYaw = ekfState(6);
+	float yawDiff = magYaw - currentEstimatedYaw;
+	// Ensure estimated yaw is within the range -PI to PI 
+	if (yawDiff  > F_PI)
+	{
+		currentEstimatedYaw -= 2.f * F_PI;
+	}
+	else if (yawDiff < -F_PI)
+	{
+		currentEstimatedYaw += 2.f * F_PI;
+	}
+	zFromX(0) = currentEstimatedYaw;
+	hPrime(0, 6) = 1;`
 
 
+![Scenario 10](Scenario_10.JPG)
 ### Step 5: Closed Loop + GPS Update ###
 
 1. Run scenario `11_GPSUpdate`.  At the moment this scenario is using both an ideal estimator and and ideal IMU.  Even with these ideal elements, watch the position and velocity errors (bottom right). As you see they are drifting away, since GPS update is not yet implemented.
@@ -201,6 +255,15 @@ Up until now we've only used the accelerometer and gyro for our state estimation
 **Hint: see section 7.3.1 of [Estimation for Quadrotors](https://www.overleaf.com/read/vymfngphcccj) for a refresher on the GPS update.**
 
 At this point, congratulations on having a working estimator!
+`
+void QuadEstimatorEKF::UpdateFromGPS(V3F pos, V3F vel)` method implementation.
+Simple update, `hPrime(0, 0) = hPrime(1, 1) = hPrime(2, 2) = hPrime(3, 3) = hPrime(4, 4) = hPrime(5, 5) = 1;
+	zFromX(0) = ekfState(0);
+	zFromX(1) = ekfState(1);
+	zFromX(2) = ekfState(2);
+	zFromX(3) = ekfState(3);
+	zFromX(4) = ekfState(4);
+	zFromX(5) = ekfState(5);`
 
 ### Step 6: Adding Your Controller ###
 
@@ -215,8 +278,8 @@ Up to this point, we have been working with a controller that has been relaxed t
 **Hint: you may find it easiest to do your de-tuning as a 2 step process by reverting to ideal sensors and de-tuning under those conditions first.**
 
 ***Success criteria:*** *Your objective is to complete the entire simulation cycle with estimated position error of < 1m.*
-
-
+Some fine-tuning of Parameters were involved, but no major changes.
+![Scenario 11](Scenario_11.mp4)
 ## Tips and Tricks ##
 
  - When it comes to transposing matrices, `.transposeInPlace()` is the function you want to use to transpose a matrix
