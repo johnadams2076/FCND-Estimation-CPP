@@ -217,7 +217,7 @@ Up until now we've only used the accelerometer and gyro for our state estimation
 **Hint: see section 7.3.2 of [Estimation for Quadrotors](https://www.overleaf.com/read/vymfngphcccj) for a refresher on the magnetometer update.**
 `void QuadEstimatorEKF::UpdateFromMag(float magYaw)`
 is the method. `float currentEstimatedYaw = ekfState(6);
-	float yawDiff = magYaw - currentEstimatedYaw;
+	float yawDiff = currentEstimatedYaw - magYaw;
 	// Ensure estimated yaw is within the range -PI to PI 
 	if (yawDiff  > F_PI)
 	{
@@ -232,6 +232,9 @@ is the method. `float currentEstimatedYaw = ekfState(6);
 
 
 ![Scenario 10](Scenario_10.JPG)
+As per mentor review, fine-tuned kpPQR, kpYaw and QYawStd parameters. Changes to Yaw range was done. Please see image below.
+![Scenario 10 Review](Scenario_10_1.JPG)
+
 ### Step 5: Closed Loop + GPS Update ###
 
 1. Run scenario `11_GPSUpdate`.  At the moment this scenario is using both an ideal estimator and and ideal IMU.  Even with these ideal elements, watch the position and velocity errors (bottom right). As you see they are drifting away, since GPS update is not yet implemented.
