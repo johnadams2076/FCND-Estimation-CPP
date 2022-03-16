@@ -332,7 +332,7 @@ void QuadEstimatorEKF::UpdateFromMag(float magYaw)
 	////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
 	
 	float currentEstimatedYaw = ekfState(6);
-	float yawDiff = magYaw - currentEstimatedYaw;
+	float yawDiff = currentEstimatedYaw - magYaw;
 	// Ensure estimated yaw is within the range -PI to PI 
 	if (yawDiff  > F_PI)
 	{
