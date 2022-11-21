@@ -88,7 +88,6 @@ void QuadEstimatorEKF::UpdateFromIMU(V3F accel, V3F gyro)
 	//    2) use the Quaternion<float> class, which has a handy FromEuler123_RPY function for creating a quaternion from Euler Roll/PitchYaw
 	//       (Quaternion<float> also has a IntegrateBodyRate function, though this uses quaternions, not Euler angles)
 
-	////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
 	// SMALL ANGLE GYRO INTEGRATION:
 	// (replace the code below)
 	// make sure you comment it out when you add your own code -- otherwise e.g. you might integrate yaw twice
@@ -116,7 +115,6 @@ void QuadEstimatorEKF::UpdateFromIMU(V3F accel, V3F gyro)
 	}
 	ekfState(6) = predictedYaw;
 
-	/////////////////////////////// END STUDENT CODE ////////////////////////////
 
 	// CALCULATE UPDATE
 	accelRoll = atan2f(accel.y, accel.z);
@@ -175,7 +173,6 @@ VectorXf QuadEstimatorEKF::PredictState(VectorXf curState, float dt, V3F accel, 
 
 	Quaternion<float> attitude = Quaternion<float>::FromEuler123_RPY(rollEst, pitchEst, curState(6));
 
-	////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
 
 	predictedState(0) += curState(3) * dt;
 	predictedState(1) += curState(4) * dt;
@@ -188,7 +185,6 @@ VectorXf QuadEstimatorEKF::PredictState(VectorXf curState, float dt, V3F accel, 
 	predictedState(4) += intertialFrameAccel.y * dt;
 	//predictedState(5) += (intertialFrameAccel.z - GRAVITY) * dt; // As per above comment, not required to integrate yaw.
 
-	/////////////////////////////// END STUDENT CODE ////////////////////////////
 
 	return predictedState;
 }
@@ -212,7 +208,6 @@ MatrixXf QuadEstimatorEKF::GetRbgPrime(float roll, float pitch, float yaw)
 	// - You can also do some numerical partial derivatives in a unit test scheme to check 
 	//   that your calculations are reasonable
 
-	////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
 	RbgPrime(0, 0) = -cos(pitch) * sin(yaw);
 	RbgPrime(0, 1) = (-sin(roll) * sin(pitch) * sin(yaw)) 
 					- (cos(roll) * cos(yaw));
@@ -224,7 +219,6 @@ MatrixXf QuadEstimatorEKF::GetRbgPrime(float roll, float pitch, float yaw)
 	RbgPrime(1, 2) = (cos(roll) * sin(pitch) * cos(yaw)) 
 					+ (sin(roll) * sin(yaw));
 
-	/////////////////////////////// END STUDENT CODE ////////////////////////////
 
 	return RbgPrime;
 }
@@ -267,7 +261,6 @@ void QuadEstimatorEKF::Predict(float dt, V3F accel, V3F gyro)
 	MatrixXf gPrime(QUAD_EKF_NUM_STATES, QUAD_EKF_NUM_STATES);
 	gPrime.setIdentity();
 
-	////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
 
 	gPrime(0, 3) = gPrime(1, 4) = gPrime(2, 5) = dt;
 
@@ -279,7 +272,6 @@ void QuadEstimatorEKF::Predict(float dt, V3F accel, V3F gyro)
 	gPrime.transposeInPlace();
 	ekfCov = (tempMat * gPrime) + Q;
 
-	/////////////////////////////// END STUDENT CODE ////////////////////////////
 
 	ekfState = newState;
 }
@@ -301,7 +293,6 @@ void QuadEstimatorEKF::UpdateFromGPS(V3F pos, V3F vel)
 	// Hints: 
 	//  - The GPS measurement covariance is available in member variable R_GPS
 	//  - this is a very simple update
-	////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
 	hPrime(0, 0) = hPrime(1, 1) = hPrime(2, 2) = hPrime(3, 3) = hPrime(4, 4) = hPrime(5, 5) = 1;
 
 	zFromX(0) = ekfState(0);
@@ -310,7 +301,6 @@ void QuadEstimatorEKF::UpdateFromGPS(V3F pos, V3F vel)
 	zFromX(3) = ekfState(3);
 	zFromX(4) = ekfState(4);
 	zFromX(5) = ekfState(5);
-	/////////////////////////////// END STUDENT CODE ////////////////////////////
 
 	Update(z, hPrime, R_GPS, zFromX);
 }
@@ -329,7 +319,6 @@ void QuadEstimatorEKF::UpdateFromMag(float magYaw)
 	//  - Make sure to normalize the difference between your measured and estimated yaw
 	//    (you don't want to update your yaw the long way around the circle)
 	//  - The magnetomer measurement covariance is available in member variable R_Mag
-	////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
 	
 	float currentEstimatedYaw = ekfState(6);
 	float yawDiff = currentEstimatedYaw - magYaw;
@@ -345,7 +334,6 @@ void QuadEstimatorEKF::UpdateFromMag(float magYaw)
 	zFromX(0) = currentEstimatedYaw;
 	hPrime(0, 6) = 1;
 
-	/////////////////////////////// END STUDENT CODE ////////////////////////////
 
 	Update(z, hPrime, R_Mag, zFromX);
 }
